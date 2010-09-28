@@ -1,0 +1,62 @@
+#!/usr/bin/php
+<?php
+/*
+ * JSON2SQL PHP script
+ * This script converts a JSON file to a series of SQL INSERT staments
+ *
+ * Written by Hay Kranen < http://www.haykranen.nl > < hay at bykr dot org >
+ *
+ * USE
+ * Make this executable
+ * $ chmod u+x json2sql
+ * Then invoke it from the command line like this
+ * $ json2sql tablename myfile.json
+ * The script will automatically write the resulting file as myfile.sql
+ */
+
+function quit($msg) {
+    die($msg . "\n");
+}
+
+$table = $argv[1];
+if (!$table) quit("No tablename given!");
+
+$filename = $argv[2];
+if (!file_exists($filename)) quit("File does not exist: $filename");
+
+$file = file_get_contents($filename);
+if (!$file) quit("File read error with $filanme");
+
+echo "Processing $filename... \n";
+
+$data = json_decode($file, true);
+$sql = "";
+foreach($data as $obj) {
+
+    $i = 0;
+    $cnt = count($obj) - 1;
+    $keys = ""; $values = "";
+    foreach($obj as $key => $value) {
+        // mysql_real_escape_string() doesn't work here because we don't have a
+        // sql connection
+        $key = addslashes($key);
+        $value = addslashes($value);
+
+        $keys .= "`$key`";
+        $values .= "'$value'";
+
+        if ($i < $cnt) {
+            $keys .= ",";
+            $values .= ",";
+        }
+
+        $i++;
+    }
+
+    $sql .= "INSERT INTO `$table` ($keys) VALUES ($values);\n";
+}
+// Create a filename based on the input file
+$out = pathinfo($filename, PATHINFO_FILENAME) . ".sql";
+if(!file_put_contents($out, $sql)) quit("Could not write contents to $out");
+
+quit("Written SQL data to $out");
