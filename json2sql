@@ -32,28 +32,9 @@ echo "Processing $filename... \n";
 $data = json_decode($file, true);
 $sql = "";
 foreach($data as $obj) {
-
-    $i = 0;
-    $cnt = count($obj) - 1;
-    $keys = ""; $values = "";
-    foreach($obj as $key => $value) {
-        // mysql_real_escape_string() doesn't work here because we don't have a
-        // sql connection
-        $key = addslashes($key);
-        $value = addslashes($value);
-
-        $keys .= "`$key`";
-        $values .= "'$value'";
-
-        if ($i < $cnt) {
-            $keys .= ",";
-            $values .= ",";
-        }
-
-        $i++;
-    }
-
-    $sql .= "INSERT INTO `$table` ($keys) VALUES ($values);\n";
+    $keys   = implode('`,`', array_map('addslashes', array_keys($obj)));
+    $values = implode("','", array_map('addslashes', array_values($obj)));
+    $sql .= "INSERT INTO `$table` (`$keys`) VALUES ('$values');\n";
 }
 // Create a filename based on the input file
 $out = pathinfo($filename, PATHINFO_FILENAME) . ".sql";
